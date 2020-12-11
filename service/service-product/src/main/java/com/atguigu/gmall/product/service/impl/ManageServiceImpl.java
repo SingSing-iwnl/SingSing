@@ -7,6 +7,7 @@ import com.atguigu.gmall.product.service.ManageService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.omg.CORBA.TIMEOUT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ManageServiceImpl implements ManageService {
@@ -294,13 +296,18 @@ public class ManageServiceImpl implements ManageService {
         SkuInfo skuInfo = (SkuInfo) redisTemplate.opsForValue().get(skukey);
         //判断
         if (skuInfo==null){
-            //缓存中没有数据
-            //从数据库中获取数据所以此处需要添加分布式锁
+            //缓存中没有数据,就从数据库中获取数据所以此处需要添加分布式锁
             //声明一个带锁的key=sku:skuid+lock
             String skuKeyLock = RedisConst.SKUKEY_PREFIX + skuId + RedisConst.SKULOCK_SUFFIX;
             //声明一个uuid 防误删
             String uuid= UUID.randomUUID().toString();
-            //开始上锁
+            //开始上锁 第一个参数是声明的锁,第二个参数为防止误删的的uuid,
+            Boolean flag = redisTemplate.opsForValue().setIfAbsent(skuKeyLock, uuid, RedisConst.SKULOCK_EXPIRE_PX1, TimeUnit.SECONDS);
+            //判断是否上锁成功
+            if (flag){
+                //上锁成功,执行业务
+
+            }
 //            getSkuInfoDB()
         }
 
